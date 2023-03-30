@@ -1,0 +1,5 @@
+gmailApi:
+  applicationName: "Gmail Test"
+  credentialsFilePath: "/credentials.json"
+  sender: "support@1-stop.biz"
+  subject: "Combined Vessel Schedule"
