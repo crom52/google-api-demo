@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 class VesselScheduleController {
   private final VesselScheduleService vesselScheduleService;
-  @GetMapping("vessel/schedule/")
+  @GetMapping("vessel/schedule/next/eta-after-week")
   List getScheduleFromEmailAttachment() {
     return vesselScheduleService.findNext7DaysVesselPlan();
   }
