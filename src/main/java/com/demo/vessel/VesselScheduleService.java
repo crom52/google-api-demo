@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
 import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
@@ -109,7 +110,7 @@ class VesselScheduleService {
         .range(0, headerRow.getLastCellNum())
         .mapToObj(headerRow::getCell)
         .map(cell -> cell != null ? cell.getStringCellValue() : "column_")
-        .toList();
+        .collect(toList());
   }
 
   private List<Row> getRowsHasETAAfter7Days(Sheet sheet, List<String> columnNames) {
@@ -122,7 +123,7 @@ class VesselScheduleService {
         .mapToObj(sheet::getRow)
         .filter(Objects::nonNull)
         .filter(e -> isAfter7Days(e.getCell(indexOfEtaColumn).toString()))
-        .toList();
+        .collect(toList());
   }
 
   private List<Map<String, String>> convertToMaps(List<String> columnNames, List<Row> etaAfter7DayRows) {
@@ -135,7 +136,7 @@ class VesselScheduleService {
         .map(row -> columnNames
             .stream()
             .collect(toMap(identity(), key -> nullSafeToString(row.getCell(columnNames.indexOf(key))))))
-        .toList();
+        .collect(toList());
   }
 
   private String buildQueryEmail(String subject, String sender, Instant startDate, Instant endDate) {
