@@ -1,5 +1,7 @@
 package com.demo.vessel;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.Gmail.Users.Messages;
 import com.google.api.services.gmail.model.Message;
@@ -18,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -45,7 +48,7 @@ class VesselScheduleService {
   private String sender;
   @Value("${gmailApi.subject:Test Google Email}")
   private String subject;
-
+  Cache<String, Object> cache = Caffeine.newBuilder().maximumSize(1000).expireAfterWrite(10, MINUTES).build();
   List<?> findNext7DaysVesselPlan() {
     try {
       Messages messageService = service.users().messages();
@@ -53,11 +56,19 @@ class VesselScheduleService {
       String user = "me";
       List<Object> resultList = new ArrayList<>();
       for (var email : emails) {
+        var cached = cache.getIfPresent(email.getId());
+        if (cached != null) {
+          resultList.add(cached);
+          continue;
+        }
+
         MessagePart attachment = getAttachmentExcel(messageService, email, user);
         Sheet sheet = getSheetInExelFile(service, email.getId(), attachment.getBody().getAttachmentId());
         List<String> columnNames = getColumnNames(sheet.getRow(0));
-        var etaAfter7DayRows = getRowsHasETAAfter7Days(sheet, columnNames);
-        resultList.add(convertToMaps(columnNames, etaAfter7DayRows));
+        List<Row> etaAfter7DayRows = getRowsHasETAAfter7Days(sheet, columnNames);
+        List<Map<String, String>> rowAsMaps = convertToMaps(columnNames, etaAfter7DayRows);
+        resultList.add(rowAsMaps);
+        cache.put(email.getId(), rowAsMaps);
       }
       return resultList;
     } catch (Exception e) {
